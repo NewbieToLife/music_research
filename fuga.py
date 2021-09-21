@@ -155,6 +155,9 @@ class fuga:       ###############init function
                         while k < 0:
                             k = k + 7
                             count = count+1
+                        print("#########K: "+str(k))
+                        print("midi scale: "+str(self.midi_scale))
+                        print("mode: "+str(self.mode))
                         defi[0].append(self.midi_scale[k]-(count*12))
                         defi[1].append(1)
         
@@ -239,6 +242,16 @@ class fuga:       ###############init function
         
         return(score)
 
+    def getRangescore(self,chords):
+        return(max(chords)-min(chords))
+
+    def getVariabilityscore(self,chords):
+        score=0
+        for i in range(0,len(chords)-1):
+            for k in range(i,len(chords)-1):
+                score=score+abs(chords[i]-chords[k])*(1/(k-i+1))
+        return(score)
+
     def getChordsharscore(self):
         linear_chords = []
         for i in (self.chords):
@@ -250,13 +263,16 @@ class fuga:       ###############init function
         
         global_fugue_score = self.getChordsglobalharscore(linear_chords)
         local_fugue_score = self.getChordslocalharscore(linear_chords)
-        return([global_fugue_score,local_fugue_score])
+        range_score = self.getRangescore(linear_chords)
+        var_score = self.getVariabilityscore(linear_chords)
+        return({"Global harmonic score":global_fugue_score,"Local harmonic score":local_fugue_score, "Range score":range_score, "Variability score":var_score})
             
 
 class pool:   ##########class responsible for generating, breeding, analyzing and mutating fugues
     
-    def __init__(self,number=100,fugues=None):
+    def __init__(self,number=100,fugues=None,global_harmonic_score_threshold=[-7,6]):
         self.number=number
+        self.global_harmonic_score_threshold=global_harmonic_score_threshold
 
         if fugues == None:
             fugues = []
@@ -277,4 +293,18 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         a = fuga()
         return(a)
 
-            
+    def define_parents(self,percentage_of_parents):
+        scores=[]
+        scores_diffs=[]
+        parents=[]
+        average=(self.global_harmonic_score_threshold[0]+self.global_harmonic_score_threshold[1])/2
+        for i in self.fugues:
+            scores.append(i)
+            scores_diffs.append(abs(i.getChordsharscore()["Global harmonic score"]-average))
+        while len(parents)<percentage_of_parents*self.number:
+            parents.append(scores[scores_diffs.index(min(scores_diffs))])
+            popit=scores_diffs.index(min(scores_diffs))
+            scores.pop(popit)
+            scores_diffs.pop(popit)
+
+        return(parents)

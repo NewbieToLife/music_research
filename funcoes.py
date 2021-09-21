@@ -1,6 +1,6 @@
 notas = {"Cb":59, "C":60, "C#":61, "Db":61, "D":62, "D#":63, "Eb":63, "E":64, "E#":65, "Fb":64, "F":65, "F#":66, "Gb":66, "G":67, "G#":68, "Ab":68, "A":69, "A#":70, "Bb":70, "B":71, "B#":72}
 setim = {"maior":11, "aumentado":12, "menor":10, "diminuto":9}
-dic_modos = {"blues hexatonico":[3,2,1,1,3,2],"blues heptatonico":[2,1,2,1,3,1,2],"blues nonatonico":[2,1,1,1,2,2,1,1,1],"maior":[2,2,1,2,2,2,1], "menor":[2,1,2,2,1,2,2], "dorico":[2,1,2,2,2,1,2], "frigio":[1,2,2,2,1,2,2], "lidio":[2,2,2,1,2,2], "mixolidio":[2,2,1,2,2,1,2],"locrio":[1,2,2,1,2,2,2]}
+dic_modos = {"blues hexatonico":[3,2,1,1,3,2],"blues heptatonico":[2,1,2,1,3,1,2],"blues nonatonico":[2,1,1,1,2,2,1,1,1],"maior":[2,2,1,2,2,2,1], "menor":[2,1,2,2,1,2,2], "dorico":[2,1,2,2,2,1,2], "frigio":[1,2,2,2,1,2,2], "lidio":[2,2,2,1,2,2,1], "mixolidio":[2,2,1,2,2,1,2],"locrio":[1,2,2,1,2,2,2],"jonio":[2,2,1,2,2,2,1]}
 modos_triades = {"maior":[4,7] , "aumentado":[4,8], "menor":[3,7], "diminuto":[3,6], "suspenso":[7], "sus diminuto":[6], "sus aumentado":[8]}
 import random as r
 #consertar blues menor
