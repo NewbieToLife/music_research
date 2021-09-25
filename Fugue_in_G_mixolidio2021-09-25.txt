@@ -1,6 +1,0 @@
-Acordes: [[1, 1]]
-Modo: mixolidio
-Tonic: G
-Defi[0]: [57, 57]
-Defi[1]: [2, 2]
-Global Harmonic Score: -14.0
