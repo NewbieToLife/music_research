@@ -208,6 +208,19 @@ class fuga:       ###############init function
 
 ################################# getting musical scores
 
+    def getNumChordsPerBarScore(self,chords):
+        if len(chords)==1:
+            return(0)
+        else:
+            one=0
+            two=0
+            for i in chords:
+                if type(i)==int or type(i)==float:
+                    one+=1
+                elif type(i)==list:
+                    two+=1
+            return(abs(one-two))
+
     def getChordslocalharscore(self,chords):
         score = 0
         for i in range(0,len(chords)-1):
@@ -264,7 +277,8 @@ class fuga:       ###############init function
         local_fugue_score = self.getChordslocalharscore(linear_chords)
         range_score = self.getRangescore(linear_chords)
         var_score = self.getVariabilityscore(linear_chords)
-        return({"Global harmonic score":global_fugue_score/self.num_bar,"Local harmonic score":local_fugue_score/self.num_bar, "Range score":range_score/self.num_bar, "Variability score":var_score/self.num_bar})
+        number_of_chords_per_bar=self.getNumChordsPerBarScore(self.chords)
+        return({"Global harmonic score":global_fugue_score/self.num_bar,"Local harmonic score":local_fugue_score/self.num_bar, "Range score":range_score, "Variability score":var_score/self.num_bar,"Variability in number of chords per bar":number_of_chords_per_bar/self.num_bar})
             
 
 class pool:   ##########class responsible for generating, breeding, analyzing and mutating fugues

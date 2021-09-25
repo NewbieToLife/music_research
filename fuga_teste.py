@@ -1,12 +1,10 @@
 import fuga as fu
+vector=[]
+for i in range(0,100000):
+    a=fu.fuga()
+    vector.append(a.score["Local harmonic score"])
 
-po = fu.pool(number=1000,global_harmonic_score_threshold=[-14,-14])
-
-a=po.define_parents(0.1)
-a[0].write_file()
-
-
-
+print(min(vector))
 #globalhar=0
 #localhar=0
 #rang=0
