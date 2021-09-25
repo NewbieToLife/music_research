@@ -19,11 +19,11 @@ def getchords(number_of_bars):
     for i in range(0,number_of_bars):  #####defining number of chords per bar. Maximum of two chords per bar
         num_chords = r.choices([1,2])[0]
         if num_chords == 1:
-            chords.append(r.choices([0]+list(range(-14,15)))[0])
+            chords.append(r.choices(list(range(-14,15)))[0])
         elif num_chords == 2:
             x = []
             for k in range(0,2):
-                x.append(r.choices([0]+list(range([-14,15]))])[0])
+                x.append(r.choices(list(range(-14,15)))[0])
             chords.append(x)
     
     return chords

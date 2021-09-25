@@ -1,7 +1,11 @@
 import fuga as fu
 
-a = fu.pool(number=1000)
-v=a.define_parents(0.2)
+po = fu.pool(number=1000,global_harmonic_score_threshold=[-14,-14])
+
+a=po.define_parents(0.1)
+a[0].write_file()
+
+
 
 #globalhar=0
 #localhar=0
