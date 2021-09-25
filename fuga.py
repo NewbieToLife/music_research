@@ -19,11 +19,11 @@ def getchords(number_of_bars):
     for i in range(0,number_of_bars):  #####defining number of chords per bar. Maximum of two chords per bar
         num_chords = r.choices([1,2])[0]
         if num_chords == 1:
-            chords.append(r.choices([-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])[0])
+            chords.append(r.choices([0]+list(range(-14,15)))[0])
         elif num_chords == 2:
             x = []
             for k in range(0,2):
-                x.append(r.choices([-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])[0])
+                x.append(r.choices([0]+list(range([-14,15]))])[0])
             chords.append(x)
     
     return chords
@@ -202,8 +202,7 @@ class fuga:       ###############init function
         arq.write("Tonic: " + str(self.tonic) + "\n")
         arq.write("Defi[0]: " + str(definitive_music[0])+"\n")
         arq.write("Defi[1]: " + str(definitive_music[1])+"\n")
-        arq.write("Scores: " + str(self.score[0])+"\n")
-        arq.write("Scores: " + str(self.score[1])+"\n")
+        arq.write("Global Harmonic Score: " + str(self.score["Global harmonic score"])+"\n")
         arq.close()
 
 
@@ -265,7 +264,7 @@ class fuga:       ###############init function
         local_fugue_score = self.getChordslocalharscore(linear_chords)
         range_score = self.getRangescore(linear_chords)
         var_score = self.getVariabilityscore(linear_chords)
-        return({"Global harmonic score":global_fugue_score,"Local harmonic score":local_fugue_score, "Range score":range_score, "Variability score":var_score})
+        return({"Global harmonic score":global_fugue_score/self.num_bar,"Local harmonic score":local_fugue_score/self.num_bar, "Range score":range_score/self.num_bar, "Variability score":var_score/self.num_bar})
             
 
 class pool:   ##########class responsible for generating, breeding, analyzing and mutating fugues
