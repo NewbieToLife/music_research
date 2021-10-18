@@ -1,14 +1,11 @@
 import fuga as fu
-vector=[]
-for i in range(0,100000):
-    a=fu.fuga()
-    vector.append(a.score["Local harmonic score"])
 
-print(min(vector))
-#globalhar=0
-#localhar=0
-#rang=0
-#variability=0
+a = fu.pool()
+a.define_parents(fraction_of_parents=0.8,global_harmonic_threshold=[6,7],local_harmonic_threshold=[6,7],range_threshold=[6,7],variability_threshold=[6,7],variability_chords_per_bar_threshold=[6,7])
+print(a.parents)
+print(len(a.parents))
+
+
 #for i in range(0,len(a.fugues)):
 #    c=a.fugues[i].getChordsharscore()
 #    globalhar=globalhar+c["Global harmonic score"]

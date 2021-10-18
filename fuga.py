@@ -9,6 +9,7 @@ import funcoes as f
 import random as r
 from datetime import date
 from midiutil import MIDIFile
+import random as ra
 
 harmonic_reference = [[0,7,14],[3,4,10,11],[2,5,9,12],[1,6,8,13]]
 modes_from_tonics = {"C":"maior","D":"dorico","E":"frigio","F":"lidio","G":"mixolidio","A":"menor"}
@@ -280,12 +281,17 @@ class fuga:       ###############init function
         number_of_chords_per_bar=self.getNumChordsPerBarScore(self.chords)
         return({"Global harmonic score":global_fugue_score/self.num_bar,"Local harmonic score":local_fugue_score/self.num_bar, "Range score":range_score, "Variability score":var_score/self.num_bar,"Variability in number of chords per bar":number_of_chords_per_bar/self.num_bar})
             
+    def getCoordinate_in_score_space(self):
+        scores = list(self.score.values())
+        value_to_return = 0
+        for i in scores:
+            value_to_return = value_to_return+i**2
+        return value_to_return**(1/2)
 
 class pool:   ##########class responsible for generating, breeding, analyzing and mutating fugues
     
-    def __init__(self,number=100,fugues=None,global_harmonic_score_threshold=[-7,6]):
+    def __init__(self,number=100,fugues=None):
         self.number=number
-        self.global_harmonic_score_threshold=global_harmonic_score_threshold
 
         if fugues == None:
             fugues = []
@@ -306,18 +312,43 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         a = fuga()
         return(a)
 
-    def define_parents(self,percentage_of_parents):
-        scores=[]
-        scores_diffs=[]
-        parents=[]
-        average=(self.global_harmonic_score_threshold[0]+self.global_harmonic_score_threshold[1])/2
-        for i in self.fugues:
-            scores.append(i)
-            scores_diffs.append(abs(i.getChordsharscore()["Global harmonic score"]-average))
-        while len(parents)<percentage_of_parents*self.number:
-            parents.append(scores[scores_diffs.index(min(scores_diffs))])
-            popit=scores_diffs.index(min(scores_diffs))
-            scores.pop(popit)
-            scores_diffs.pop(popit)
+    def define_parents(self,fraction_of_parents,global_harmonic_threshold,local_harmonic_threshold,range_threshold,variability_threshold,variability_chords_per_bar_threshold):
+        ref_global = (global_harmonic_threshold[0]+global_harmonic_threshold[1])/2
+        ref_local = (local_harmonic_threshold[0]+local_harmonic_threshold[1])/2
+        ref_range = (range_threshold[0]+range_threshold[1])/2
+        ref_variability = (variability_threshold[0]+variability_threshold[1])/2
+        ref_variability_chords_per_bar = (variability_chords_per_bar_threshold[0]+variability_chords_per_bar_threshold[1])/2
+        parents=self.sort_by_score([ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar])
+        self.parents=[]
+        for i in range(0,int(len(parents)*fraction_of_parents)):
+            self.parents.append(parents[i][0])
+        return(self.parents)
 
-        return(parents)
+    def sort_by_score(self,reference):
+        vec = []
+        for i in self.fugues:
+            point_in_score_space=[i.score["Global harmonic score"],i.score["Local harmonic score"],i.score["Range score"],i.score["Variability score"],i.score["Variability in number of chords per bar"]]
+            distance=0
+            for k in range(0,len(point_in_score_space)):
+                distance=distance+(point_in_score_space[k]+reference[k])**2
+            distance=distance**(1/2)
+            vec.append([i,distance])
+        return(self.quick_sort_score(vec))
+    
+    def quick_sort_score(self,vector):
+        less=[]
+        equal=[]
+        greater=[]
+
+        if len(vector)>1:
+            pivot = vector[0]
+            for x in vector:
+                if x[1] < pivot[1]:
+                    less.append(x)
+                elif x[1] == pivot[1]:
+                    equal.append(x)
+                elif x[1] > pivot[1]:
+                    greater.append(x)
+            return(self.quick_sort_score(less)+equal+self.quick_sort_score(greater))
+        else:
+            return(vector)
