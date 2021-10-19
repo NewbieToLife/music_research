@@ -292,7 +292,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
     
     def __init__(self,number=100,fugues=None):
         self.number=number
-
+        
         if fugues == None:
             fugues = []
             for i in range(0,number):
@@ -352,3 +352,24 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
             return(self.quick_sort_score(less)+equal+self.quick_sort_score(greater))
         else:
             return(vector)
+    
+    def breed_from_globalharscore(self,parents):
+        for i in range(0,len(parents)):
+            for k in range(0,len(parents[i].chords)):
+                if i+k>=len(parents):
+                    w=0+k
+                    while w>len(parents):
+                        w=w-len(parents)
+                else:
+                    w=i+k
+                if k<len(parents[w].chords):
+                    parents[i].chords[k]=parents[w].chords[k]
+                else:
+                    while k>=len(parents[w].chords):
+                        k=k-len(parents[w].chords)
+                    parents[i].chords[k]=parents[w].chords[k]
+        return(parents)
+    #def mutate_from_globalharscore(self,parents,threshold):
+        #function that gets only one parent and statistically reduces their#
+        #dissonance relative frequency by mutating their chords into       #
+        #"better" chords                                                   #
