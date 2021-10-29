@@ -1,24 +1,33 @@
 import fuga as fu
+import matplotlib.pyplot as plt
+import numpy as np
 
-a = fu.pool()
-a.define_parents(fraction_of_parents=1,global_harmonic_threshold=[6,10],local_harmonic_threshold=[6,10],range_threshold=[6,7],variability_threshold=[25,35],variability_chords_per_bar_threshold=[6,7])
-print(a.parents)
-#print(len(a.parents))
-print(a.parents[3].chords)
-w=a.breed_from_globalharscore(a.parents)
-print(w[3].chords)
-#print(len(w))
+a = fu.pool(number=1000,fraction_of_parents=0.1,global_harmonic_threshold=[-14,14],local_harmonic_threshold=[-10.5,10.5],range_threshold=[0,28],variability_threshold=[0,45],variability_chords_per_bar_threshold=[0,1],num_bar_threshold=[1,16])
+average_distance=[]
+iteration_number=[]
+counter=0
+for i in range(0,100):
+    #print("Generation "+str(i))
+    a.define_parents()
+    #print("Defining parents...")
+    a.breed(random_comparison_percentage=0.1)
+    #print("Breeding...")
+    a.mutate(fraction_of_offspring_mutation=0.5,fraction_of_parents_mutation=0.5)
+    #print("Throwing x-rays...")
+    a.call_Darwin()
+    #print("Calling Darwin...")
+    average_distance.append(a.get_average_population_distance_from_reference())
+    iteration_number.append(counter)
+    counter=counter+1
 
-#for i in range(0,len(a.fugues)):
-#    c=a.fugues[i].getChordsharscore()
-#    globalhar=globalhar+c["Global harmonic score"]
-#    localhar=localhar+c["Local harmonic score"]
-#    rang=rang+c["Range score"]
-#    variability=variability+c["Variability score"]
-
-#print(i)
-#print("Global Har: "+str(globalhar/i))
-#print("Local var: "+str(localhar/i))
-#print("Range: "+str(rang/i))
-#print("Variability: "+str(variability/i))
-
+fig = plt.figure()
+plt.plot(iteration_number,average_distance)
+fig.suptitle('Convergence')
+plt.xlabel('Generation')
+plt.ylabel('Distance from reference')
+plt.show()
+# fugas=[]
+# for i in range(0,10000):
+#     fugas.append(fu.fuga().score["Number of bars"])
+# print(max(fugas))
+# print(min(fugas))

@@ -5,11 +5,10 @@ Teremos um vetor de scores e um score global com thresholds para cada um deles
 """
 
 
-import funcoes as f
-import random as r
+import funcoes as f, random as r, warnings
 from datetime import date
 from midiutil import MIDIFile
-import random as ra
+from math import ceil
 
 harmonic_reference = [[0,7,14],[3,4,10,11],[2,5,9,12],[1,6,8,13]]
 modes_from_tonics = {"C":"maior","D":"dorico","E":"frigio","F":"lidio","G":"mixolidio","A":"menor"}
@@ -34,7 +33,10 @@ class fuga:       ###############init function
     def __init__(self, chords=None, num_bar=None, num_voices=None, mode=None, tonic=None):  ##initializing fugue object
 
         self.chords=chords
-        self.num_bar=num_bar
+        if self.chords==None:
+            self.num_bar=num_bar
+        else:
+            self.num_bar=len(self.chords)
         self.num_voices=num_voices
         self.mode=mode
         self.tonic=tonic
@@ -279,19 +281,21 @@ class fuga:       ###############init function
         range_score = self.getRangescore(linear_chords)
         var_score = self.getVariabilityscore(linear_chords)
         number_of_chords_per_bar=self.getNumChordsPerBarScore(self.chords)
-        return({"Global harmonic score":global_fugue_score/self.num_bar,"Local harmonic score":local_fugue_score/self.num_bar, "Range score":range_score, "Variability score":var_score/self.num_bar,"Variability in number of chords per bar":number_of_chords_per_bar/self.num_bar})
-            
-    def getCoordinate_in_score_space(self):
-        scores = list(self.score.values())
-        value_to_return = 0
-        for i in scores:
-            value_to_return = value_to_return+i**2
-        return value_to_return**(1/2)
+        return({"Global harmonic score":global_fugue_score/self.num_bar,"Local harmonic score":local_fugue_score/self.num_bar, "Range score":range_score, "Variability score":var_score/self.num_bar,"Variability in number of chords per bar":number_of_chords_per_bar/self.num_bar, "Number of bars":self.num_bar})
 
 class pool:   ##########class responsible for generating, breeding, analyzing and mutating fugues
     
-    def __init__(self,number=100,fugues=None):
+    def __init__(self,number=100,fugues=None,fraction_of_parents=0.1,global_harmonic_threshold=[6,10],local_harmonic_threshold=[6,10],range_threshold=[6,7],variability_threshold=[25,35],variability_chords_per_bar_threshold=[6,7],num_bar_threshold=[4,5]):
         self.number=number
+        self.fraction_of_parents=fraction_of_parents
+        self.global_harmonic_threshold=global_harmonic_threshold
+        self.local_harmonic_threshold=local_harmonic_threshold
+        self.range_threshold=range_threshold
+        self.variability_threshold=variability_threshold
+        self.variability_chords_per_bar_threshold=variability_chords_per_bar_threshold
+        self.num_bar_threshold=num_bar_threshold
+        self.parents=None
+        self.offspring=None
         
         if fugues == None:
             fugues = []
@@ -309,28 +313,28 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
                 self.fugues = fugues
 
     def generate_seed(self):
-        a = fuga()
-        return(a)
+        return fuga()
 
-    def define_parents(self,fraction_of_parents,global_harmonic_threshold,local_harmonic_threshold,range_threshold,variability_threshold,variability_chords_per_bar_threshold):
-        ref_global = (global_harmonic_threshold[0]+global_harmonic_threshold[1])/2
-        ref_local = (local_harmonic_threshold[0]+local_harmonic_threshold[1])/2
-        ref_range = (range_threshold[0]+range_threshold[1])/2
-        ref_variability = (variability_threshold[0]+variability_threshold[1])/2
-        ref_variability_chords_per_bar = (variability_chords_per_bar_threshold[0]+variability_chords_per_bar_threshold[1])/2
-        parents=self.sort_by_score([ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar])
+    def define_parents(self):
+        ref_global = (self.global_harmonic_threshold[0]+self.global_harmonic_threshold[1])/2
+        ref_local = (self.local_harmonic_threshold[0]+self.local_harmonic_threshold[1])/2
+        ref_range = (self.range_threshold[0]+self.range_threshold[1])/2
+        ref_variability = (self.variability_threshold[0]+self.variability_threshold[1])/2
+        ref_variability_chords_per_bar = (self.variability_chords_per_bar_threshold[0]+self.variability_chords_per_bar_threshold[1])/2
+        ref_num_bar = (self.num_bar_threshold[0]+self.num_bar_threshold[1])/2
+        parents=self.sort_by_score([ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar,ref_num_bar])
         self.parents=[]
-        for i in range(0,int(len(parents)*fraction_of_parents)):
+        for i in range(0,int(len(parents)*self.fraction_of_parents)):
             self.parents.append(parents[i][0])
         return(self.parents)
 
     def sort_by_score(self,reference):
         vec = []
         for i in self.fugues:
-            point_in_score_space=[i.score["Global harmonic score"],i.score["Local harmonic score"],i.score["Range score"],i.score["Variability score"],i.score["Variability in number of chords per bar"]]
+            point_in_score_space=[i.score["Global harmonic score"],i.score["Local harmonic score"],i.score["Range score"],i.score["Variability score"],i.score["Variability in number of chords per bar"],i.score["Number of bars"]]
             distance=0
             for k in range(0,len(point_in_score_space)):
-                distance=distance+(point_in_score_space[k]+reference[k])**2
+                distance=distance+(point_in_score_space[k]-reference[k])**2
             distance=distance**(1/2)
             vec.append([i,distance])
         return(self.quick_sort_score(vec))
@@ -353,23 +357,176 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         else:
             return(vector)
     
-    def breed_from_globalharscore(self,parents):
-        for i in range(0,len(parents)):
-            for k in range(0,len(parents[i].chords)):
-                if i+k>=len(parents):
-                    w=0+k
-                    while w>len(parents):
-                        w=w-len(parents)
-                else:
-                    w=i+k
-                if k<len(parents[w].chords):
-                    parents[i].chords[k]=parents[w].chords[k]
-                else:
-                    while k>=len(parents[w].chords):
-                        k=k-len(parents[w].chords)
-                    parents[i].chords[k]=parents[w].chords[k]
-        return(parents)
-    #def mutate_from_globalharscore(self,parents,threshold):
-        #function that gets only one parent and statistically reduces their#
-        #dissonance relative frequency by mutating their chords into       #
-        #"better" chords                                                   #
+    def get_average_population_score(self,score_type):
+        val = 0
+        for i in self.fugues:
+            val=val+i.score[score_type]
+        return val/len(self.fugues)
+
+    def get_distance_from_reference(self,fugue):
+        ref_global = (self.global_harmonic_threshold[0]+self.global_harmonic_threshold[1])/2
+        ref_local = (self.local_harmonic_threshold[0]+self.local_harmonic_threshold[1])/2
+        ref_range = (self.range_threshold[0]+self.range_threshold[1])/2
+        ref_variability = (self.variability_threshold[0]+self.variability_threshold[1])/2
+        ref_variability_chords_per_bar = (self.variability_chords_per_bar_threshold[0]+self.variability_chords_per_bar_threshold[1])/2
+        ref_num_bar = (self.num_bar_threshold[0]+self.num_bar_threshold[1])/2
+        reference=[ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar,ref_num_bar]
+        distance=0
+        point_in_score_space=[fugue.score["Global harmonic score"],fugue.score["Local harmonic score"],fugue.score["Range score"],fugue.score["Variability score"],fugue.score["Variability in number of chords per bar"],fugue.score["Number of bars"]]
+        for i in range(0,len(point_in_score_space)):
+            distance=distance+(point_in_score_space[i]-reference[i])**2
+        return distance**(1/2)
+        
+    def get_average_population_distance_from_reference(self):
+        val=0
+        for i in range(0,len(self.fugues)):
+            val=val+self.get_distance_from_reference(self.fugues[i])
+        return val/len(self.fugues)
+
+
+    def get_average_parents_score(self,score_type):
+        if self.parents==None:
+            warnings.warn("Parents have not been defined!")
+        else:
+            val = 0
+            for i in self.parents:
+                val = val+i.score[score_type]
+            return val/len(self.parents)
+
+    def breed(self,random_comparison_percentage=0.1):
+        def return_smaller_list(list1,list2):
+            if len(list1)<=len(list2):
+                return list1
+            else:
+                return list2
+
+        def return_bigger_list(list1,list2):
+            if len(list1)>len(list2):
+                return list1
+            else:
+                return list2
+
+        def repeated_index(li,element):
+            aux_list=[]
+            indexes=[]
+            for i in li:
+                aux_list.append(i)
+            counter = 0
+            while True:
+                try:
+                    indexes.append(aux_list.index(element)+counter)
+                    aux_list.pop(aux_list.index(element))
+                    counter=counter+1
+                except:
+                    if counter == 0:
+                        return False
+                    else:
+                        return indexes
+            return False
+
+        def cyclic_list(li,index1,index2):
+            if index2<=len(li):
+                return li[index1:index2]
+            else:
+                return li[index1:]+li[:index2%len(li)]
+
+        def is_subsequence(small_list,big_list):
+            indexes = repeated_index(big_list,small_list[0])
+            if indexes == False:
+                return [False]
+            for i in indexes:
+                if small_list==cyclic_list(big_list,i,i+len(small_list)):
+                    return [small_list,i,i+len(small_list)]
+            return [False]
+
+        def get_bigger_subsequence(x,y):
+            small = return_smaller_list(x,y)
+            big = return_bigger_list(x,y)
+            memory=[]
+            for i in range(0,len(small)-2):
+                eval = is_subsequence(small[i:len(small)],big)
+                if eval[0]!=False:
+                    memory.append(eval+[i,len(small)])
+                eval = is_subsequence(small[0:len(small)-i],big)
+                if eval[0]!=False:
+                    memory.append(eval+[0,len(small)-i])
+            diffs=[]
+            if len(memory)>0:
+                for i in memory:
+                    diffs.append(len(i[0]))
+                return memory[diffs.index(max(diffs))]
+
+            return None
+        offspring = []
+        for i in self.parents:
+            if random_comparison_percentage<=1:
+                breeding_candidates = r.sample(self.parents,k=ceil(random_comparison_percentage*len(self.parents)))
+                for k in breeding_candidates:
+                    if k.chords!=i.chords:
+                        small = return_smaller_list(k.chords,i.chords)
+                        big = return_bigger_list(k.chords,i.chords)
+                        eval = get_bigger_subsequence(small,big)
+                        if eval != None:
+                            offspring.append(fuga(chords=small[:eval[-1]]+big[eval[-3]:]))
+                            offspring.append(fuga(chords=big[:eval[-4]]+small[eval[-2]:]))
+                        else:
+                            divise = r.choices(list(range(0,len(small))))[0]
+                            offspring.append(fuga(chords=big[0:divise]+small[divise:len(small)]))
+                            offspring.append(fuga(chords=small[0:divise]+big[divise:len(big)]))
+        self.offspring=offspring
+
+    def mutate(self,fraction_of_parents_mutation=0.01,fraction_of_offspring_mutation=0.01):
+        def insert_random_chord(fugue):
+            new_chords=fugue.chords
+            new_chords.insert(r.choices(list(range(0,len(fugue.chords))))[0],r.choices(list(range(-14,15)))[0])
+            return fuga(chords=new_chords)
+        def remove_random_chord(fugue):
+            new_chords = fugue.chords
+            new_chords.pop(r.choices(list(range(0,len(new_chords))))[0])
+            return fuga(chords=new_chords)
+        def change_random_chord(fugue):
+            new_chords=fugue.chords
+            new_chords[r.choices(list(range(0,len(new_chords))))[0]]=r.choices(list(range(-14,15)))[0]
+            return fuga(chords=new_chords)
+        if self.offspring!=None:
+            indexes = r.choices(list(range(0,len(self.offspring))),k=ceil(fraction_of_offspring_mutation*len(self.offspring)))
+            for i in indexes:
+                if len(self.offspring[i].chords)<16 and len(self.offspring[i].chords)>1:
+                    self.offspring[i]=r.choices([insert_random_chord(self.offspring[i]),remove_random_chord(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
+                elif len(self.offspring[i].chords)==16:
+                    self.offspring[i]=r.choices([remove_random_chord(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
+                elif len(self.offspring[i].chords)==1:
+                    self.offspring[i]=r.choices([insert_random_chord(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
+        if self.parents!=None:
+            indexes = r.choices(list(range(0,len(self.parents))),k=ceil(fraction_of_parents_mutation*len(self.parents)))
+            for i in indexes:
+                if len(self.parents[i].chords)<16 and len(self.parents[i].chords)>1:
+                    self.parents[i]=r.choices([insert_random_chord(self.parents[i]),remove_random_chord(self.parents[i]),change_random_chord(self.parents[i])])[0]
+                elif len(self.parents[i].chords)==16:
+                    self.parents[i]=r.choices([remove_random_chord(self.parents[i]),change_random_chord(self.parents[i])])[0]
+                elif len(self.parents[i].chords)==1:
+                    self.parents[i]=r.choices([insert_random_chord(self.parents[i]),change_random_chord(self.parents[i])])[0]
+
+    def call_Darwin(self):
+        ref_global = (self.global_harmonic_threshold[0]+self.global_harmonic_threshold[1])/2
+        ref_local = (self.local_harmonic_threshold[0]+self.local_harmonic_threshold[1])/2
+        ref_range = (self.range_threshold[0]+self.range_threshold[1])/2
+        ref_variability = (self.variability_threshold[0]+self.variability_threshold[1])/2
+        ref_variability_chords_per_bar = (self.variability_chords_per_bar_threshold[0]+self.variability_chords_per_bar_threshold[1])/2
+        ref_num_bar = (self.num_bar_threshold[0]+self.num_bar_threshold[1])/2
+        reference=[ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar,ref_num_bar]
+        vec = []
+        death_pool=self.parents+self.offspring+self.fugues
+        for i in death_pool:
+            point_in_score_space=[i.score["Global harmonic score"],i.score["Local harmonic score"],i.score["Range score"],i.score["Variability score"],i.score["Variability in number of chords per bar"],i.score["Number of bars"]]
+            distance=0
+            for k in range(0,len(point_in_score_space)):
+                distance=distance+(point_in_score_space[k]-reference[k])**2
+            distance=distance**(1/2)
+            vec.append([i,distance])
+        survivors=self.quick_sort_score(vec)
+        for i in range(0,len(self.fugues)):
+            self.fugues[i]=survivors[i][0]
+        self.offspring=None
+        self.parents=None
+        #self.fugues=survivors
