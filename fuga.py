@@ -285,15 +285,15 @@ class fuga:       ###############init function
 
 class pool:   ##########class responsible for generating, breeding, analyzing and mutating fugues
     
-    def __init__(self,number=100,fugues=None,fraction_of_parents=0.1,global_harmonic_threshold=[6,10],local_harmonic_threshold=[6,10],range_threshold=[6,7],variability_threshold=[25,35],variability_chords_per_bar_threshold=[6,7],num_bar_threshold=[4,5]):
+    def __init__(self,number=100,fugues=None,fraction_of_parents=0.1,global_harmonic_reference=0,local_harmonic_reference=0,range_reference=14,variability_reference=22.5,variability_chords_per_bar_reference=0.5,num_bar_reference=7.5):
         self.number=number
         self.fraction_of_parents=fraction_of_parents
-        self.global_harmonic_threshold=global_harmonic_threshold
-        self.local_harmonic_threshold=local_harmonic_threshold
-        self.range_threshold=range_threshold
-        self.variability_threshold=variability_threshold
-        self.variability_chords_per_bar_threshold=variability_chords_per_bar_threshold
-        self.num_bar_threshold=num_bar_threshold
+        self.global_harmonic_reference=global_harmonic_reference
+        self.local_harmonic_reference=local_harmonic_reference
+        self.range_reference=range_reference
+        self.variability_reference=variability_reference
+        self.variability_chords_per_bar_reference=variability_chords_per_bar_reference
+        self.num_bar_reference=num_bar_reference
         self.parents=None
         self.offspring=None
         
@@ -324,7 +324,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
 
     def get_distance_from_reference(self,fugue):
         vec = []
-        reference = [((self.global_harmonic_threshold[0]+self.global_harmonic_threshold[1])/2),((self.local_harmonic_threshold[0]+self.local_harmonic_threshold[1])/2),((self.range_threshold[0]+self.range_threshold[1])/2),((self.variability_threshold[0]+self.variability_threshold[1])/2),((self.variability_chords_per_bar_threshold[0]+self.variability_chords_per_bar_threshold[1])/2),((self.num_bar_threshold[0]+self.num_bar_threshold[1])/2)]
+        reference = [self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.num_bar_reference]
         point_in_score_space=list(fugue.score.values())
         distance=0
         for k in range(0,len(point_in_score_space)):
@@ -362,13 +362,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         return val/len(self.fugues)
 
     def get_distance_from_reference(self,fugue):
-        ref_global = (self.global_harmonic_threshold[0]+self.global_harmonic_threshold[1])/2
-        ref_local = (self.local_harmonic_threshold[0]+self.local_harmonic_threshold[1])/2
-        ref_range = (self.range_threshold[0]+self.range_threshold[1])/2
-        ref_variability = (self.variability_threshold[0]+self.variability_threshold[1])/2
-        ref_variability_chords_per_bar = (self.variability_chords_per_bar_threshold[0]+self.variability_chords_per_bar_threshold[1])/2
-        ref_num_bar = (self.num_bar_threshold[0]+self.num_bar_threshold[1])/2
-        reference=[ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar,ref_num_bar]
+        reference=[self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.num_bar_reference]
         distance=0
         point_in_score_space=list(fugue.score.values())
         for i in range(0,len(point_in_score_space)):
@@ -506,13 +500,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
                     self.parents[i]=r.choices([insert_random_chord(self.parents[i]),change_random_chord(self.parents[i])])[0]
 
     def call_Darwin(self):
-        ref_global = (self.global_harmonic_threshold[0]+self.global_harmonic_threshold[1])/2
-        ref_local = (self.local_harmonic_threshold[0]+self.local_harmonic_threshold[1])/2
-        ref_range = (self.range_threshold[0]+self.range_threshold[1])/2
-        ref_variability = (self.variability_threshold[0]+self.variability_threshold[1])/2
-        ref_variability_chords_per_bar = (self.variability_chords_per_bar_threshold[0]+self.variability_chords_per_bar_threshold[1])/2
-        ref_num_bar = (self.num_bar_threshold[0]+self.num_bar_threshold[1])/2
-        reference=[ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar,ref_num_bar]
+        reference=[self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.num_bar_reference]
         vec = []
         death_pool=self.parents+self.offspring+self.fugues
         for i in death_pool:
