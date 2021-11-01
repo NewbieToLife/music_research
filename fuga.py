@@ -312,6 +312,17 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
                     fugues.append(self.generate_seed())
                 self.fugues = fugues
 
+    def get_representative_individuals(self):
+        models=[self.fugues[0]]
+        models_chords=[self.fugues[0].chords]
+        for i in self.fugues:
+            if i.chords not in models_chords:
+                models.append(i)
+                models_chords.append(i.chords)
+        
+        return models
+
+
     def generate_seed(self):
         return fuga()
 
@@ -520,7 +531,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         if plot=="yes":
             average_distance=[]
             iteration_number=[]
-            counter=0
+        counter=0
         average=0.1
         average_vec=[]
         recent_average=self.get_average_population_distance_from_reference()
@@ -558,9 +569,53 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
             plt.ylabel('Distance from reference')
             plt.show()
 
-# class biome:
+class biome:
 
-#     def __init__(self,species=None,num_species=5,species_populations=None,fractions_of_parents=0.1,global_harmonic_threshold=[6,10],local_harmonic_threshold=[6,10],range_threshold=[6,7],variability_threshold=[25,35],variability_chords_per_bar_threshold=[6,7],num_bar_threshold=[4,5]):
-#         self.num_species=num_species
-#         self.species_populations=species_populations
-#         self.fractions_of_parents=fractions_of_parents
+    def __init__(self,species=None,num_species=5,species_num_fugues=100,fractions_of_parents=0.1,global_harmonic_references=0,local_harmonic_references=0,range_references=14,variability_references=22.5,variability_chords_per_bar_references=0.5,num_bar_references=7.5):
+        self.num_species=num_species
+        self.species=species
+
+        self.species_num_fugues=species_num_fugues
+        self.fractions_of_parents=fractions_of_parents
+        self.global_harmonic_references=global_harmonic_references
+        self.local_harmonic_references=local_harmonic_references
+        self.range_references=range_references
+        self.variability_references=variability_references
+        self.variability_chords_per_bar_references=variability_chords_per_bar_references
+        self.num_bar_references=num_bar_references
+
+        self.species_representatives=None
+
+        self.check_parameters()
+
+    def converge_species(self,plot="no"):
+        for i in self.species:
+            i.converge(plot=plot)
+
+    def check_vectors(self,vector_candidate):
+        typ = type(vector_candidate)
+        if typ!=list:
+            new_vec=[]
+            for i in range(0,self.num_species):
+                new_vec.append(vector_candidate)
+            return new_vec
+        else:
+            while len(vector_candidate)<self.num_species:
+                vector_candidate.append(vector_candidate[-1])
+            return vector_candidate
+
+    def check_parameters(self):
+        self.fractions_of_parents=self.check_vectors(self.fractions_of_parents)
+        self.global_harmonic_references=self.check_vectors(self.global_harmonic_references)
+        self.local_harmonic_references=self.check_vectors(self.local_harmonic_references)
+        self.range_references=self.check_vectors(self.range_references)
+        self.variability_references=self.check_vectors(self.variability_references)
+        self.variability_chords_per_bar_references=self.check_vectors(self.variability_chords_per_bar_references)
+        self.num_bar_references=self.check_vectors(self.num_bar_references)
+        self.species_num_fugues=self.check_vectors(self.species_num_fugues)
+        if self.species!=None:
+            while len(self.species)>self.num_species:
+                self.species.pop(-1)
+            while len(self.species)<self.num_species:
+                position_in_vectors=len(self.species)
+                self.species.append(pool(number=self.species_num_fugues[position_in_vectors],fraction_of_parents=self.fractions_of_parents[position_in_vectors],global_harmonic_reference=self.global_harmonic_references[position_in_vectors],local_harmonic_reference=self.local_harmonic_references[position_in_vectors],range_reference=self.range_references[position_in_vectors],variability_reference=self.variability_references[position_in_vectors],variability_chords_per_bar_reference=self.variability_chords_per_bar_references[position_in_vectors],num_bar_reference=self.num_bar_references[position_in_vectors]))
