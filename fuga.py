@@ -569,3 +569,10 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
             plt.xlabel('Generation')
             plt.ylabel('Distance from reference')
             plt.show()
+
+# class biome:
+
+#     def __init__(self,species=None,num_species=5,species_populations=None,fractions_of_parents=0.1,global_harmonic_threshold=[6,10],local_harmonic_threshold=[6,10],range_threshold=[6,7],variability_threshold=[25,35],variability_chords_per_bar_threshold=[6,7],num_bar_threshold=[4,5]):
+#         self.num_species=num_species
+#         self.species_populations=species_populations
+#         self.fractions_of_parents=fractions_of_parents
