@@ -5,7 +5,7 @@ Teremos um vetor de scores e um score global com thresholds para cada um deles
 """
 
 
-import funcoes as f, random as r, warnings
+import funcoes as f, random as r, warnings, matplotlib.pyplot as plt
 from datetime import date
 from midiutil import MIDIFile
 from math import ceil
@@ -316,27 +316,25 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         return fuga()
 
     def define_parents(self):
-        ref_global = (self.global_harmonic_threshold[0]+self.global_harmonic_threshold[1])/2
-        ref_local = (self.local_harmonic_threshold[0]+self.local_harmonic_threshold[1])/2
-        ref_range = (self.range_threshold[0]+self.range_threshold[1])/2
-        ref_variability = (self.variability_threshold[0]+self.variability_threshold[1])/2
-        ref_variability_chords_per_bar = (self.variability_chords_per_bar_threshold[0]+self.variability_chords_per_bar_threshold[1])/2
-        ref_num_bar = (self.num_bar_threshold[0]+self.num_bar_threshold[1])/2
-        parents=self.sort_by_score([ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar,ref_num_bar])
+        parents=self.sort_by_score()
         self.parents=[]
         for i in range(0,int(len(parents)*self.fraction_of_parents)):
             self.parents.append(parents[i][0])
         return(self.parents)
 
-    def sort_by_score(self,reference):
+    def get_distance_from_reference(self,fugue):
+        vec = []
+        reference = [((self.global_harmonic_threshold[0]+self.global_harmonic_threshold[1])/2),((self.local_harmonic_threshold[0]+self.local_harmonic_threshold[1])/2),((self.range_threshold[0]+self.range_threshold[1])/2),((self.variability_threshold[0]+self.variability_threshold[1])/2),((self.variability_chords_per_bar_threshold[0]+self.variability_chords_per_bar_threshold[1])/2),((self.num_bar_threshold[0]+self.num_bar_threshold[1])/2)]
+        point_in_score_space=list(fugue.score.values())
+        distance=0
+        for k in range(0,len(point_in_score_space)):
+            distance=distance+(point_in_score_space[k]-reference[k])**2
+        return distance**(1/2)
+        
+    def sort_by_score(self):
         vec = []
         for i in self.fugues:
-            point_in_score_space=[i.score["Global harmonic score"],i.score["Local harmonic score"],i.score["Range score"],i.score["Variability score"],i.score["Variability in number of chords per bar"],i.score["Number of bars"]]
-            distance=0
-            for k in range(0,len(point_in_score_space)):
-                distance=distance+(point_in_score_space[k]-reference[k])**2
-            distance=distance**(1/2)
-            vec.append([i,distance])
+            vec.append([i,self.get_distance_from_reference(i)])
         return(self.quick_sort_score(vec))
     
     def quick_sort_score(self,vector):
@@ -372,7 +370,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         ref_num_bar = (self.num_bar_threshold[0]+self.num_bar_threshold[1])/2
         reference=[ref_global,ref_local,ref_range,ref_variability,ref_variability_chords_per_bar,ref_num_bar]
         distance=0
-        point_in_score_space=[fugue.score["Global harmonic score"],fugue.score["Local harmonic score"],fugue.score["Range score"],fugue.score["Variability score"],fugue.score["Variability in number of chords per bar"],fugue.score["Number of bars"]]
+        point_in_score_space=list(fugue.score.values())
         for i in range(0,len(point_in_score_space)):
             distance=distance+(point_in_score_space[i]-reference[i])**2
         return distance**(1/2)
@@ -518,7 +516,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         vec = []
         death_pool=self.parents+self.offspring+self.fugues
         for i in death_pool:
-            point_in_score_space=[i.score["Global harmonic score"],i.score["Local harmonic score"],i.score["Range score"],i.score["Variability score"],i.score["Variability in number of chords per bar"],i.score["Number of bars"]]
+            point_in_score_space=list(i.score.values())
             distance=0
             for k in range(0,len(point_in_score_space)):
                 distance=distance+(point_in_score_space[k]-reference[k])**2
@@ -529,4 +527,45 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
             self.fugues[i]=survivors[i][0]
         self.offspring=None
         self.parents=None
-        #self.fugues=survivors
+    
+    def converge(self,plot="no",iterations=100):
+        if plot=="yes":
+            average_distance=[]
+            iteration_number=[]
+            counter=0
+        average=0.1
+        average_vec=[]
+        recent_average=self.get_average_population_distance_from_reference()
+        converge_var=0
+        while converge_var==0 and counter<iterations:
+            previous_average=recent_average
+            print("Generation "+str(counter))
+            self.define_parents()
+            print("Defining parents...")
+            self.breed(random_comparison_percentage=average**2)
+            print("Breeding...")
+            self.mutate(fraction_of_offspring_mutation=average,fraction_of_parents_mutation=average)
+            print("Mutating...")
+            self.call_Darwin()
+            print("Calling Darwin...")
+            recent_average=self.get_average_population_distance_from_reference()
+            average = recent_average/previous_average
+            counter=counter+1
+            average_vec.append(average)
+            if len(average_vec)>3:
+                if average_vec[-1]>0.95 and average_vec[-2]>0.95 and average_vec[-3]>0.95:
+                    converge_var=1
+            if average>1:
+                average=0
+            if plot=="yes":
+                average_distance.append(recent_average)
+                iteration_number.append(counter)
+        
+        if plot=="yes":
+            fig = plt.figure()
+            plt.plot(iteration_number,average_distance,label="average distance")
+            plt.plot(iteration_number,average_vec,label="mutation factor")
+            fig.suptitle('Convergence')
+            plt.xlabel('Generation')
+            plt.ylabel('Distance from reference')
+            plt.show()
