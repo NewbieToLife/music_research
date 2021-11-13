@@ -1,0 +1,6 @@
+Acordes: [-4, -3, [4, -14], -14, -14]
+Modo: menor
+Tonic: A
+Defi[0]: [50, 52, 64, 33, 33, 33]
+Defi[1]: [2, 2, 2, 1, 2, 2]
+Global Harmonic Score: 1.5

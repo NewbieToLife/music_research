@@ -10,7 +10,8 @@ from datetime import date
 from midiutil import MIDIFile
 from math import ceil
 
-harmonic_reference = [[0,7,14],[3,4,10,11],[2,5,9,12],[1,6,8,13]]
+harmonic_reference = [[0,7,14],[2,5,9,12],[3,4,10,11],[1,6,8,13]]
+#harmonic_reference = [[0,7,14],[3,4,10,11],[2,5,9,12],[1,6,8,13]]
 modes_from_tonics = {"C":"maior","D":"dorico","E":"frigio","F":"lidio","G":"mixolidio","A":"menor"}
 tonics_from_modes = {"maior":"C","menor":"A","jonio":"C","dorico":"D","frigio":"E","lidio":"F","mixolidio":"G","eolio":"A"}
 
@@ -38,7 +39,11 @@ class fuga:       ###############init function
 
     def seed_chords(self):                      ####getting random chords
         chords = []
-        for i in range(0,self.num_bar):  #####defining number of chords per bar. Maximum of two chords per bar
+        if r.choices([1,2])[0]==1:
+            chords.append(r.choices([-14,-12,-10,-7,-5,-3,0,2,4,7,9,11,14])[0])
+        else:
+            chords.append([0,r.choices([-14,-12,-10,-7,-5,-3,0,2,4,7,9,11,14])[0]])
+        for i in range(0,self.num_bar-1):  #####defining number of chords per bar. Maximum of two chords per bar
             num_chords = r.choices([1,2])[0]
             if num_chords == 1:
                 chords.append(r.choices(list(range(-14,15)))[0])
@@ -271,12 +276,20 @@ class fuga:       ###############init function
             return 0
 
     def getBeginningHarScore(self):
-        if self.chords[0] in [0,7,14]:
-            return 10
-        elif self.chords[0] in [3,4,10,11]:
-            return 3
-        else:
-            return 0
+        if type(self.chords[0])==int:
+            if self.chords[0] in [-14,-7,0,7,14]:
+                return 10
+            elif self.chords[0] in [-12,-10,-5,-3,2,4,9,11]:
+                return 3
+            else:
+                return 0
+        elif type(self.chords[0])==list:
+            if self.chords[0][0] in [-14,-7,0,7,14]:
+                return 10
+            elif self.chords[0][0] in [-12,-10,-5,-3,2,4,9,11]:
+                return 3
+            else:
+                return 0
 
     def getChordsharscore(self):
         linear_chords = []
@@ -639,3 +652,9 @@ class biome:
             while len(self.species)<self.num_species:
                 position_in_vectors=len(self.species)
                 self.species.append(pool(number=self.species_num_fugues[position_in_vectors],fraction_of_parents=self.fractions_of_parents[position_in_vectors],global_harmonic_reference=self.global_harmonic_references[position_in_vectors],local_harmonic_reference=self.local_harmonic_references[position_in_vectors],range_reference=self.range_references[position_in_vectors],variability_reference=self.variability_references[position_in_vectors],variability_chords_per_bar_reference=self.variability_chords_per_bar_references[position_in_vectors],num_bar_reference=self.num_bar_references[position_in_vectors]))
+
+    def get_representative_individuals(self):
+        vec = []
+        for i in self.species:
+            vec.append(i.get_representative_individuals())
+        return vec
