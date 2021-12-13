@@ -307,11 +307,11 @@ class fuga:       ###############init function
         number_of_chords_per_bar=self.getNumChordsPerBarScore(self.chords)
         ending_score=self.getEndingHarScore()
         beginning_score=self.getBeginningHarScore()
-        return({"Global harmonic score":global_fugue_score/len(self.chords),"Local harmonic score":local_fugue_score/len(self.chords), "Range score":range_score, "Variability score":var_score/len(self.chords),"Variability in number of chords per bar":number_of_chords_per_bar/len(self.chords), "Number of bars":len(self.chords), "Ending score":ending_score, "Beginning score":beginning_score})
+        return({"Global harmonic score":global_fugue_score/len(self.chords),"Local harmonic score":local_fugue_score/len(self.chords), "Range score":range_score, "Variability score":var_score/len(self.chords),"Variability in number of chords per bar":number_of_chords_per_bar/len(self.chords), "Ending score":ending_score, "Beginning score":beginning_score})
 
 class pool:   ##########class responsible for generating, breeding, analyzing and mutating fugues
     
-    def __init__(self,number=100,fugues=None,fraction_of_parents=0.1,global_harmonic_reference=0,local_harmonic_reference=0,range_reference=14,variability_reference=22.5,variability_chords_per_bar_reference=0.5,num_bar_reference=7.5,ending_reference=10,beginning_reference=10):
+    def __init__(self,number=100,fugues=None,fraction_of_parents=0.1,global_harmonic_reference=0,local_harmonic_reference=0,range_reference=14,variability_reference=22.5,variability_chords_per_bar_reference=0.5,num_bar=7,ending_reference=10,beginning_reference=10):
         self.number=number
         self.fraction_of_parents=fraction_of_parents
         self.global_harmonic_reference=global_harmonic_reference
@@ -319,7 +319,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         self.range_reference=range_reference
         self.variability_reference=variability_reference
         self.variability_chords_per_bar_reference=variability_chords_per_bar_reference
-        self.num_bar_reference=num_bar_reference
+        self.num_bar=num_bar
         self.ending_reference=ending_reference
         self.beginning_reference=beginning_reference
         self.parents=None
@@ -328,7 +328,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         if fugues == None:
             fugues = []
             for i in range(0,number):
-                fugues.append(fuga())
+                fugues.append(fuga(num_bar=self.num_bar))
             self.fugues=fugues
 
         elif fugues != None and type(fugues) == list:
@@ -337,7 +337,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
             else:
                 x = len(fugues)
                 for i in range(x,number):
-                    fugues.append(fuga())
+                    fugues.append(fuga(num_bar=self.num_bar))
                 self.fugues = fugues
 
     def get_representative_individuals(self):
@@ -359,7 +359,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
 
     def get_distance_from_reference(self,fugue):
         vec = []
-        reference = [self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.num_bar_reference,self.ending_reference,self.beginning_reference]
+        reference = [self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.ending_reference,self.beginning_reference]
         point_in_score_space=list(fugue.score.values())
         distance=0
         for k in range(0,len(point_in_score_space)):
@@ -397,7 +397,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         return val/len(self.fugues)
 
     def get_distance_from_reference(self,fugue):
-        reference=[self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.num_bar_reference,self.ending_reference,self.beginning_reference]
+        reference=[self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.ending_reference,self.beginning_reference]
         distance=0
         point_in_score_space=list(fugue.score.values())
         for i in range(0,len(point_in_score_space)):
@@ -502,47 +502,36 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         self.offspring=offspring
 
     def mutate(self,fraction_of_parents_mutation=0.01,fraction_of_offspring_mutation=0.01):
-        def insert_random_chord(fugue):
-            number_of_chords=r.choices([1,2])[0]
-            to_be_inserted=r.choices(list(range(-14,15)),k=number_of_chords)
-            if len(to_be_inserted)==1:
-                to_be_inserted=to_be_inserted[0]
-            new_chords=fugue.chords
-            new_chords.insert(r.choices(list(range(0,len(fugue.chords))))[0],to_be_inserted)
-            return fuga(chords=new_chords)
-        def remove_random_chord(fugue):
-            new_chords = fugue.chords
-            new_chords.pop(r.choices(list(range(0,len(new_chords))))[0])
-            return fuga(chords=new_chords)
         def change_random_chord(fugue):
             new_chords=fugue.chords
-            number_of_chords=r.choices([1,2])[0]
+            index_to_be_changed=r.choices(list(range(0,len(new_chords))))[0]
+            if type(index_to_be_changed)==list:
+                number_of_chords=2
+            else:
+                number_of_chords=1
             to_be_changed=r.choices(list(range(-14,15)),k=number_of_chords)
             if len(to_be_changed)==1:
                 to_be_changed=to_be_changed[0]
-            new_chords[r.choices(list(range(0,len(new_chords))))[0]]=to_be_changed
+            new_chords[index_to_be_changed]=to_be_changed
             return fuga(chords=new_chords)
+        def scramble_chords(fugue):
+            new_chords=fugue.chords
+            a = r.choices(list(range(0,len(new_chords))))[0]
+            new_vector = []
+            for i in range(0,len(new_chords)):
+                new_vector.append((new_chords[a:]+new_chords[:a])[i])
+            return fuga(chords=new_vector)
         if self.offspring!=None:
             indexes = r.choices(list(range(0,len(self.offspring))),k=ceil(fraction_of_offspring_mutation*len(self.offspring)))
             for i in indexes:
-                if len(self.offspring[i].chords)<16 and len(self.offspring[i].chords)>1:
-                    self.offspring[i]=r.choices([insert_random_chord(self.offspring[i]),remove_random_chord(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
-                elif len(self.offspring[i].chords)==16:
-                    self.offspring[i]=r.choices([remove_random_chord(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
-                elif len(self.offspring[i].chords)==1:
-                    self.offspring[i]=r.choices([insert_random_chord(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
+                self.offspring[i]=r.choices([scramble_chords(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
         if self.parents!=None:
             indexes = r.choices(list(range(0,len(self.parents))),k=ceil(fraction_of_parents_mutation*len(self.parents)))
             for i in indexes:
-                if len(self.parents[i].chords)<16 and len(self.parents[i].chords)>1:
-                    self.parents[i]=r.choices([insert_random_chord(self.parents[i]),remove_random_chord(self.parents[i]),change_random_chord(self.parents[i])])[0]
-                elif len(self.parents[i].chords)==16:
-                    self.parents[i]=r.choices([remove_random_chord(self.parents[i]),change_random_chord(self.parents[i])])[0]
-                elif len(self.parents[i].chords)==1:
-                    self.parents[i]=r.choices([insert_random_chord(self.parents[i]),change_random_chord(self.parents[i])])[0]
+                self.parents[i]=r.choices([scramble_chords(self.parents[i]),change_random_chord(self.parents[i])])[0]
 
     def call_Darwin(self):
-        reference=[self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.num_bar_reference,self.ending_reference,self.beginning_reference]
+        reference=[self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.ending_reference,self.beginning_reference]
         vec = []
         death_pool=self.parents+self.offspring+self.fugues
         for i in death_pool:
@@ -602,7 +591,7 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
 
 class biome:
 
-    def __init__(self,species=[],num_species=5,species_num_fugues=100,fractions_of_parents=0.1,global_harmonic_references=0,local_harmonic_references=0,range_references=14,variability_references=22.5,variability_chords_per_bar_references=0.5,num_bar_references=7.5,ending_references=10,beginning_references=10):
+    def __init__(self,species=[],num_species=5,species_num_fugues=100,fractions_of_parents=0.1,global_harmonic_references=0,local_harmonic_references=0,range_references=14,variability_references=22.5,variability_chords_per_bar_references=0.5,num_bar=7,ending_references=10,beginning_references=10):
         self.num_species=num_species
         self.species=species
 
@@ -613,7 +602,7 @@ class biome:
         self.range_references=range_references
         self.variability_references=variability_references
         self.variability_chords_per_bar_references=variability_chords_per_bar_references
-        self.num_bar_references=num_bar_references
+        self.num_bar=num_bar
         self.ending_references=ending_references
         self.beginning_references=beginning_references 
 
@@ -642,7 +631,7 @@ class biome:
         self.range_references=self.check_vectors(self.range_references)
         self.variability_references=self.check_vectors(self.variability_references)
         self.variability_chords_per_bar_references=self.check_vectors(self.variability_chords_per_bar_references)
-        self.num_bar_references=self.check_vectors(self.num_bar_references)
+        self.num_bar=self.check_vectors(self.num_bar)
         self.species_num_fugues=self.check_vectors(self.species_num_fugues)
         self.ending_references=self.check_vectors(self.ending_references)
         self.beginning_references=self.check_vectors(self.beginning_references) 
@@ -651,7 +640,7 @@ class biome:
                 self.species.pop(-1)
             while len(self.species)<self.num_species:
                 position_in_vectors=len(self.species)
-                self.species.append(pool(number=self.species_num_fugues[position_in_vectors],fraction_of_parents=self.fractions_of_parents[position_in_vectors],global_harmonic_reference=self.global_harmonic_references[position_in_vectors],local_harmonic_reference=self.local_harmonic_references[position_in_vectors],range_reference=self.range_references[position_in_vectors],variability_reference=self.variability_references[position_in_vectors],variability_chords_per_bar_reference=self.variability_chords_per_bar_references[position_in_vectors],num_bar_reference=self.num_bar_references[position_in_vectors]))
+                self.species.append(pool(number=self.species_num_fugues[position_in_vectors],fraction_of_parents=self.fractions_of_parents[position_in_vectors],global_harmonic_reference=self.global_harmonic_references[position_in_vectors],local_harmonic_reference=self.local_harmonic_references[position_in_vectors],range_reference=self.range_references[position_in_vectors],variability_reference=self.variability_references[position_in_vectors],variability_chords_per_bar_reference=self.variability_chords_per_bar_references[position_in_vectors],num_bar=self.num_bar[position_in_vectors]))
 
     def get_representative_individuals(self):
         vec = []
