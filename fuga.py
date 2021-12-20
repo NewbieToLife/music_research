@@ -15,6 +15,150 @@ harmonic_reference = [[0,7,14],[2,5,9,12],[3,4,10,11],[1,6,8,13]]
 modes_from_tonics = {"C":"maior","D":"dorico","E":"frigio","F":"lidio","G":"mixolidio","A":"menor"}
 tonics_from_modes = {"maior":"C","menor":"A","jonio":"C","dorico":"D","frigio":"E","lidio":"F","mixolidio":"G","eolio":"A"}
 
+class subject:
+    def __init__(self, chords, mode, tonic):
+        self.get_chords(chords)
+        self.tonic=tonic
+        self.mode=mode
+        self.get_midi_tonic()
+        self.get_midi_scale()
+        self.get_melody()
+
+    def get_midi_tonic(self):
+        self.midi_tonic = f.nota(self.tonic)
+        if type(self.midi_tonic)==list:
+            self.midi_tonic=self.midi_tonic[0]
+        while self.midi_tonic<55:
+            self.midi_tonic=self.midi_tonic+12
+        while self.midi_tonic>66:
+            self.midi_tonic=self.midi_tonic-12
+    
+    def get_chords(self,chords):
+        self.chords=[]
+        for i in chords:
+            if type(i)==int:
+                note_candidate = f.qualnota(i)
+                for k in note_candidate:
+                    if len(k)==1:
+                        note_candidate=k
+                        break
+                self.chords.append(note_candidate)
+            elif type(i)==list:
+                all=[]
+                for k in i:
+                    note_candidate = f.qualnota(k)
+                    for w in note_candidate:
+                        if len(w)==1:
+                            note_candidate=w
+                            break
+                    all.append(note_candidate)
+                self.chords.append(all)
+    
+    def get_midi_scale(self):
+        scale = []
+        scale.append(self.midi_tonic)
+        for i in range(1,len(f.dic_modos[self.mode])):
+            scale.append(scale[i-1]+f.dic_modos[self.mode][i-1])
+        self.midi_scale = scale
+
+    def get_melody(self):
+        notes = []
+        durations = []
+        for i in self.chords:
+            notes_number = r.choices([1,2,3,4,5,6,7,8],k=1)[0]
+            for i in range(0,notes_number):
+                notes.append(r.choices(["n"]+list(range(-7,15)))[0])
+            if notes_number==1:
+                population = [4]
+            elif notes_number==2:
+                population = [2,2]
+            elif notes_number==3:
+                population = [2,1,1]
+            elif notes_number==4:
+                population = r.choices([[1,1,1,1],[2,1,0.5,0.5]])[0]
+            elif notes_number==5:
+                population = [1,1,1,0.5,0.5]
+            elif notes_number==6:
+                population = [1,1,0.5,0.5,0.5,0.5]
+            elif notes_number==7:
+                population = [1,0.5,0.5,0.5,0.5,0.5,0.5]
+            elif notes_number==8:
+                population = [0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]
+            while len(population)>0:
+                durations.append(population.pop(r.choices(list(range(0,len(population))))[0]))
+            actual_notes = []
+            for i in notes:
+                if i == "n":
+                    actual_notes.append(i)
+                elif 0<=i<=6:
+                    actual_notes.append(self.midi_scale[i])
+                elif i>=7 and i !=14:
+                    actual_notes.append(self.midi_scale[i-7]+12)
+                elif i==14:
+                    actual_notes.append(self.midi_scale[0]+24)
+                elif i<0 and i!=7:
+                    actual_notes.append(self.midi_scale[i+7]-12)
+                elif i ==-7:
+                    actual_notes.append(self.midi_scale[0]-24)
+
+        self.melody = {"Notes":actual_notes,"Durations":durations}
+
+    def get_melody_score(self):
+
+        def get_interval_score(midi_note,midi_note_2):
+            if midi_note == "n":
+                return 0
+            while midi_note > self.midi_scale[-1]:
+                midi_note=midi_note-12
+            while midi_note < self.midi_scale[0]:
+                midi_note=midi_note+12
+            while midi_note_2 > self.midi_scale[-1]:
+                midi_note_2=midi_note_2+12
+            while midi_note_2 < self.midi_scale[0]:
+                midi_note_2=midi_note_2+12
+            diff=self.midi_scale.index(midi_note)-self.midi_scale.index(midi_note_2)
+            if midi_note<midi_note_2:
+                diff=diff+7
+            if diff==0:
+                return 10
+            elif diff==4:
+                return 5
+            elif diff == 2:
+                return 3
+            elif diff == 3 or 5:
+                return 0
+            elif diff == 1 or 6:
+                return -5
+        harmonic_to_chords=0
+        range=0
+        directional=0
+        rythm=0
+        beginning = 0
+        ending = 0
+        init_loop_var=0
+        end_loop_var=0
+        for i in self.chords:
+            if type(i)==str:
+                while sum(self.melody["Durations"][init_loop_var:end_loop_var+1])!=4:
+                    end_loop_var=end_loop_var+1
+                for k in self.melody["Notes"][init_loop_var:end_loop_var]:
+                    harmonic_to_chords=harmonic_to_chords+get_interval_score(k,f.nota(i,5))
+                init_loop_var=end_loop_var+1
+                end_loop_var=init_loop_var
+            elif type(i)==list:
+                while sum(self.melody["Durations"][init_loop_var:end_loop_var+1])<2:
+                    end_loop_var=end_loop_var+1
+                for k in self.melody["Notes"][init_loop_var:end_loop_var]:
+                    harmonic_to_chords=harmonic_to_chords+get_interval_score(k,f.nota(i[0],5))
+                end_loop_var_2=end_loop_var
+                while sum(self.melody["Durations"][init_loop_var:end_loop_var_2+1])!=4:
+                    end_loop_var_2=end_loop_var_2+1
+                for k in self.melody["Notes"][end_loop_var:end_loop_var_2]:
+                    harmonic_to_chords=harmonic_to_chords+get_interval_score(k,f.nota(i[1],5))
+                init_loop_var=end_loop_var_2+1
+                end_loop_var=init_loop_var
+        self.melody_score=harmonic_to_chords
+
 class fuga:       ###############init function
     def __init__(self, chords=None, num_bar=None, num_voices=None, mode=None, tonic=None):  ##initializing fugue object
 
@@ -34,6 +178,8 @@ class fuga:       ###############init function
         self.get_midi_scale()
 
         self.score = self.getChordsharscore()
+
+        self.subject_=None
 
 ############################################### seeding functions
 
@@ -524,11 +670,15 @@ class pool:   ##########class responsible for generating, breeding, analyzing an
         if self.offspring!=None:
             indexes = r.choices(list(range(0,len(self.offspring))),k=ceil(fraction_of_offspring_mutation*len(self.offspring)))
             for i in indexes:
-                self.offspring[i]=r.choices([scramble_chords(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
+                new_offspring=r.choices([scramble_chords(self.offspring[i]),change_random_chord(self.offspring[i])])[0]
+                self.offspring.pop(i)
+                self.offspring.append(new_offspring)
         if self.parents!=None:
             indexes = r.choices(list(range(0,len(self.parents))),k=ceil(fraction_of_parents_mutation*len(self.parents)))
             for i in indexes:
-                self.parents[i]=r.choices([scramble_chords(self.parents[i]),change_random_chord(self.parents[i])])[0]
+                new_parent=r.choices([scramble_chords(self.parents[i]),change_random_chord(self.parents[i])])[0]
+                self.parents.pop(i)
+                self.parents.append(new_parent)
 
     def call_Darwin(self):
         reference=[self.global_harmonic_reference,self.local_harmonic_reference,self.range_reference,self.variability_reference,self.variability_chords_per_bar_reference,self.ending_reference,self.beginning_reference]
