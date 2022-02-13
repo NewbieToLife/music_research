@@ -170,15 +170,10 @@ class fuga:       ###############init function
         self.num_voices=num_voices
         self.mode=mode
         self.tonic=tonic
-
         self.check_parameters()
-
         self.get_midi_tonic()
-
         self.get_midi_scale()
-
         self.score = self.getChordsharscore()
-
         self.subject_=None
 
 ############################################### seeding functions
@@ -271,33 +266,33 @@ class fuga:       ###############init function
         for i in self.chords:
             if type(i) == int:
                 if i < len(self.midi_scale) and i >= 0:
-                    defi[0].append(self.midi_scale[i])
+                    defi[0].append([self.midi_scale[i],self.midi_scale[i+2],self.midi_scale[i+4]])
                     defi[1].append(2)
                 elif i >= len(self.midi_scale):
                     count = 0
                     while i >= len(self.midi_scale):
                         i = i-7
                         count = count+1
-                    defi[0].append(self.midi_scale[i]+(count*12))
+                    defi[0].append([self.midi_scale[i]+(count*12),self.midi_scale[i+2]+(count*12),self.midi_scale[i+4]+(count*12)])
                     defi[1].append(2)
                 elif i < 0:
                     count = 0
                     while i < 0:
                         i = i + 7
                         count = count+1
-                    defi[0].append(self.midi_scale[i]-(count*12))
+                    defi[0].append([self.midi_scale[i]-(count*12),self.midi_scale[i+2]-(count*12),self.midi_scale[i+4]-(count*12)])
                     defi[1].append(2)
             elif type(i) == list:
                 for k in i:
                     if k < len(self.midi_scale) and k >= 0:
-                        defi[0].append(self.midi_scale[k])
+                        defi[0].append([self.midi_scale[k],self.midi_scale[k+2],self.midi_scale[k+4]])
                         defi[1].append(2)
                     elif k >= len(self.midi_scale):
                         count = 0
                         while k >= len(self.midi_scale):
                             k = k - 7
                             count = count + 1
-                        defi[0].append(self.midi_scale[k]+(count*12))
+                        defi[0].append([self.midi_scale[k]+(count*12),self.midi_scale[k+2]+(count*12),self.midi_scale[k+4]+(count*12)])
                         defi[1].append(1)
                     elif k < 0:
                         count = 0
@@ -307,7 +302,7 @@ class fuga:       ###############init function
                         print("#########K: "+str(k))
                         print("midi scale: "+str(self.midi_scale))
                         print("mode: "+str(self.mode))
-                        defi[0].append(self.midi_scale[k]-(count*12))
+                        defi[0].append([self.midi_scale[k]-(count*12),self.midi_scale[k+2]-(count*12),self.midi_scale[k+4]-(count*12)])
                         defi[1].append(1)
         
         return(defi)
@@ -337,7 +332,8 @@ class fuga:       ###############init function
 #            MyMIDI.addNote(track, channel, pitch, time + i, duration, volume)
         
         for i in range(0,len(definitive_music[0])):
-            MyMIDI.addNote(track, channel, definitive_music[0][i], time + time_count, definitive_music[1][i], volume)
+            for k in range(0,i):
+                MyMIDI.addNote(track, channel, definitive_music[0][k], time + time_count, definitive_music[1][i], volume)
             time_count = time_count + definitive_music[1][i]
             
 
